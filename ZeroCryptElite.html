@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>ZeroCrypt Elite ☠️</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+<style>
+
+body{
+margin:0;
+background:black;
+color:#00ff9f;
+font-family:Consolas,monospace;
+overflow:hidden;
+}
+
+/* MATRIX */
+canvas{
+position:fixed;
+top:0;
+left:0;
+z-index:-1;
+}
+
+/* LOGIN */
+
+#login{
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+}
+
+input,button{
+background:black;
+border:1px solid #00ff9f;
+color:#00ff9f;
+padding:10px;
+margin:6px;
+width:260px;
+}
+
+button:hover{
+background:#00ff9f;
+color:black;
+cursor:pointer;
+}
+
+/* APP */
+
+#app{display:none;padding:20px;}
+
+.panel{
+background:#000000cc;
+padding:20px;
+border-radius:10px;
+box-shadow:0 0 25px #00ff9f;
+width:750px;
+margin:auto;
+}
+
+textarea{
+width:100%;
+height:120px;
+background:black;
+color:#00ff9f;
+border:1px solid #00ff9f;
+margin-top:10px;
+}
+
+.tabs{display:flex;gap:10px;margin-bottom:10px;}
+
+.tab{
+flex:1;
+border:1px solid #00ff9f;
+text-align:center;
+padding:6px;
+cursor:pointer;
+}
+
+.active{
+background:#00ff9f;
+color:black;
+}
+
+.section{display:none;}
+.show{display:block;}
+
+.drop{
+border:2px dashed #00ff9f;
+padding:20px;
+text-align:center;
+margin-top:10px;
+}
+
+.logout{
+float:right;
+width:auto;
+}
+
+</style>
+</head>
+
+<body>
+
+<canvas id="matrix"></canvas>
+
+<!-- LOGIN -->
+<div id="login">
+<h1>ZEROCRYPT ELITE ACCESS</h1>
+
+<input id="username" placeholder="Username">
+<input id="password" type="password" placeholder="Password">
+
+<button onclick="login()">LOGIN</button>
+<button onclick="register()">REGISTER</button>
+
+<p id="loginmsg"></p>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+<button class="logout" onclick="logout()">LOGOUT</button>
+
+<div class="panel">
+
+<h2>☠️ ZeroCrypt Elite Console</h2>
+
+<div class="tabs">
+<div class="tab active" onclick="openTab('aes',event)">AES LAB</div>
+<div class="tab" onclick="openTab('base64',event)">BASE64</div>
+<div class="tab" onclick="openTab('file',event)">FILE ENCRYPT</div>
+</div>
+
+<!-- AES -->
+<div id="aes" class="section show">
+<textarea id="inputText" placeholder=">> data"></textarea>
+<input id="key" placeholder="secret key">
+<button onclick="encrypt()">Encrypt</button>
+<button onclick="decrypt()">Decrypt</button>
+<textarea id="outputText"></textarea>
+</div>
+
+<!-- BASE64 -->
+<div id="base64" class="section">
+<textarea id="bInput"></textarea>
+<button onclick="encode()">Encode</button>
+<button onclick="decode()">Decode</button>
+<textarea id="bOutput"></textarea>
+</div>
+
+<!-- FILE -->
+<div id="file" class="section">
+<div class="drop" id="dropZone">DROP FILE HERE</div>
+<input id="fileKey" placeholder="file key">
+<button onclick="downloadEncrypted()">Download Encrypted File</button>
+</div>
+
+</div>
+</div>
+
+<script>
+
+/* MATRIX EFFECT */
+const canvas=document.getElementById("matrix");
+const ctx=canvas.getContext("2d");
+
+canvas.height=window.innerHeight;
+canvas.width=window.innerWidth;
+
+const letters="01ZEROCRYPTELITE";
+const fontSize=14;
+const columns=canvas.width/fontSize;
+
+const drops=[];
+for(let i=0;i<columns;i++) drops[i]=1;
+
+function draw(){
+ctx.fillStyle="rgba(0,0,0,0.05)";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+
+ctx.fillStyle="#00ff9f";
+ctx.font=fontSize+"px monospace";
+
+for(let i=0;i<drops.length;i++){
+let text=letters[Math.floor(Math.random()*letters.length)];
+ctx.fillText(text,i*fontSize,drops[i]*fontSize);
+
+if(drops[i]*fontSize>canvas.height&&Math.random()>0.975)
+drops[i]=0;
+
+drops[i]++;
+}
+}
+setInterval(draw,33);
+
+/* ================= LOGIN SYSTEM ================= */
+
+function getUsers(){
+return JSON.parse(localStorage.getItem("users"))||[];
+}
+
+function saveUsers(users){
+localStorage.setItem("users",JSON.stringify(users));
+}
+
+function register(){
+
+let user=username.value.trim();
+let pass=password.value.trim();
+
+if(!user||!pass){
+loginmsg.innerText="Fill all fields";
+return;
+}
+
+let users=getUsers();
+
+if(users.find(u=>u.user===user)){
+loginmsg.innerText="User already exists";
+return;
+}
+
+users.push({user,pass});
+saveUsers(users);
+
+loginmsg.innerText="Registered Successfully ✔";
+}
+
+function login(){
+
+let user=document.getElementById("username").value;
+let pass=document.getElementById("password").value;
+
+let users=getUsers();
+
+let valid=users.find(
+u=>u.user===user && u.pass===pass
+);
+
+if(valid){
+
+localStorage.setItem("loggedUser",user);
+
+document.getElementById("login").style.display="none";
+document.getElementById("app").style.display="block";
+
+}else{
+document.getElementById("loginmsg").innerText="ACCESS DENIED";
+}
+}
+
+function logout(){
+localStorage.removeItem("loggedUser");
+location.reload();
+}
+
+window.onload=function(){
+if(localStorage.getItem("loggedUser")){
+login.style.display="none";
+app.style.display="block";
+}
+};
+
+/* TABS */
+
+function openTab(tab,e){
+document.querySelectorAll(".section").forEach(s=>s.classList.remove("show"));
+document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+document.getElementById(tab).classList.add("show");
+e.target.classList.add("active");
+}
+
+/* AES */
+
+function encrypt(){
+outputText.value=
+CryptoJS.AES.encrypt(inputText.value,key.value).toString();
+}
+
+function decrypt(){
+let bytes=
+CryptoJS.AES.decrypt(inputText.value,key.value);
+outputText.value=
+bytes.toString(CryptoJS.enc.Utf8);
+}
+
+/* BASE64 */
+
+function encode(){ bOutput.value=btoa(bInput.value); }
+function decode(){ bOutput.value=atob(bInput.value); }
+
+/* FILE ENCRYPT */
+
+let fileData="";
+
+dropZone.ondragover=e=>e.preventDefault();
+
+dropZone.ondrop=e=>{
+e.preventDefault();
+
+let file=e.dataTransfer.files[0];
+let reader=new FileReader();
+
+reader.onload=function(evt){
+fileData=evt.target.result;
+dropZone.innerText=file.name+" loaded";
+};
+
+reader.readAsText(file);
+};
+
+function downloadEncrypted(){
+
+let encrypted=
+CryptoJS.AES.encrypt(fileData,fileKey.value).toString();
+
+let blob=new Blob([encrypted],{type:"text/plain"});
+
+let a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="encrypted.txt";
+a.click();
+}
+
+</script>
+
+</body>
+</html>
